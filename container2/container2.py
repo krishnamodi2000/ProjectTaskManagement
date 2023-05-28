@@ -32,11 +32,11 @@ def sum():
                 raise csv.Error
         # If the filename provided via the input JSON is found in the mounted disk volume,
         # the calculation is performed
-                return jsonify(
-                    {
-                        "file": file,
-                        "sum": total
-                    }
+            return jsonify(
+                {
+                    "file": file,
+                    "sum": total
+                }
                 )
     # If a filename is provided, but the file contents cannot be parsed due to not following the CSV
     # format described an error message is "Input file not in CSV format." is returned
