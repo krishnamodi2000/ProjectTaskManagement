@@ -1,7 +1,10 @@
 from flask import Flask,jsonify, request
+import os
+import requests
+
 app = Flask(__name__)
 
-@app.route("/calculate", method=['POST'])
+@app.route("/calculate", methods=['POST'])
 def calculate():
     data= request.get_json()
 
@@ -16,8 +19,14 @@ def calculate():
     
     #if filename is provided but not found mounted on disk voulme an error message is "File not found." is returned
     file=data["file"]
+    file_path = os.path.join(os.path.dirname(__file__), file)
     try: 
-        open(file)
+        if not os.path.exists(file_path):
+            raise FileNotFoundError
+        container2 = "http://localhost:7000/sum"
+        response= requests.post(container2, json=data)
+        return jsonify(response.json())
+        
     except FileNotFoundError:
         return jsonify(
             {
@@ -26,15 +35,5 @@ def calculate():
             }
         )
     
-    #Container 1 sends input to Container 2
-    product=data["product"]
-    container2="http://localhost:6000/sum"
-
-    response = request.post(container2,json={
-        "file": file,
-        "product": product
-    })
-    return response.json()
-
-if __name__ == 'main':
-    app.run(host='0.0.0.0', port=6000 )
+if __name__ == '__main__':
+    app.run(host="localhost", port=6000)
