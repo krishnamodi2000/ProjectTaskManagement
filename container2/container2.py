@@ -17,23 +17,27 @@ def sum():
                 raise csv.Error
 
             filereader = csv.reader(f,dialect)
-            total=0
-            for row in filereader:
-                if len(row) == 2:
-                    row_product = row[0].strip()
-                    row_amount = row[1].strip()
-                    if row_product == product:
-                        total += int(row_amount)
-                else:
-                    raise csv.Error
-    # If the filename provided via the input JSON is found in the mounted disk volume,
-    # the calculation is performed
-            return jsonify(
-                {
-                    "file": file,
-                    "sum": total
-                }
-            )
+            header = next(filereader)
+            if header == ['product', 'amount']:
+                total = 0
+                for row in filereader:
+                    if len(row) == 2:
+                        row_product = row[0].strip()
+                        row_amount = row[1].strip()
+                        if row_product == product:
+                            total += int(row_amount)
+                    else:
+                        raise csv.Error
+            else:
+                raise csv.Error
+        # If the filename provided via the input JSON is found in the mounted disk volume,
+        # the calculation is performed
+                return jsonify(
+                    {
+                        "file": file,
+                        "sum": total
+                    }
+                )
     # If a filename is provided, but the file contents cannot be parsed due to not following the CSV
     # format described an error message is "Input file not in CSV format." is returned
     except csv.Error:
