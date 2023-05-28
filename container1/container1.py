@@ -19,11 +19,11 @@ def calculate():
     
     #if filename is provided but not found mounted on disk voulme an error message is "File not found." is returned
     file=data["file"]
-    file_path = os.path.join(os.path.dirname(__file__), file)
+    file_path='/files/'+file
     try: 
         if not os.path.exists(file_path):
             raise FileNotFoundError
-        container2 = "http://localhost:7000/sum"
+        container2 = "http://container2:7000/sum"
         response= requests.post(container2, json=data)
         return jsonify(response.json())
         

@@ -8,8 +8,9 @@ def sum():
     data=request.get_json()
     file=data["file"]
     product=data["product"]
+    file_path='/files/'+file
     try:
-        with open(file,'r') as f:
+        with open(file_path,'r') as f:
             dialect = csv.Sniffer().sniff(f.read(1024))
             f.seek(0)
             if dialect.delimiter!=',':
