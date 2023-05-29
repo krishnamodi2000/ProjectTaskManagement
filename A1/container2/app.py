@@ -1,5 +1,6 @@
 from flask import Flask, jsonify, request
 import csv
+import os
 
 app = Flask(__name__)
 
@@ -8,7 +9,10 @@ def sum():
     data=request.get_json()
     file=data["file"]
     product=data["product"]
-    file_path='/files/'+file
+    current_dir = os.getcwd()
+    print("container2", current_dir)
+
+    file_path= current_dir+'/files/'+file
     try:
         with open(file_path,'r') as f:
             dialect = csv.Sniffer().sniff(f.read(1024))
@@ -50,5 +54,4 @@ def sum():
  
    
 
-if __name__ == '__main__':
-    app.run(host="localhost", port=7000)
+

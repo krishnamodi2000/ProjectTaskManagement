@@ -6,6 +6,7 @@ app = Flask(__name__)
 
 @app.route("/calculate", methods=['POST'])
 def calculate():
+    print("works!",flush=True)
     data= request.get_json()
 
     #if the file name is not provided an error message "Invalid JSON input." is returned
@@ -19,7 +20,10 @@ def calculate():
     
     #if filename is provided but not found mounted on disk voulme an error message is "File not found." is returned
     file=data["file"]
-    file_path='/files/'+file
+    current_dir = os.getcwd()
+    print("container2", current_dir)
+
+    file_path= current_dir+ '/files/'+file
     try: 
         if not os.path.exists(file_path):
             raise FileNotFoundError
@@ -28,6 +32,7 @@ def calculate():
         return jsonify(response.json())
         
     except FileNotFoundError:
+        print("returning from C1")
         return jsonify(
             {
                 "file": file,
@@ -35,5 +40,3 @@ def calculate():
             }
         )
     
-if __name__ == '__main__':
-    app.run(host="localhost", port=6000)

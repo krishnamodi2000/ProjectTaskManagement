@@ -1,23 +1,22 @@
 services:
-  container1:
-    image: 
+  c1:
+    image: coo1
+    container_name: container1 
     ports: 
       - "6000:6000"
     volumes:
-      - ./:/usr/files
+      - ./:/app/files
     networks:
       - containernetwork
-    restart: always
-  container2:
-    image: 
+  c2:
+    image: coo2
+    container_name: container2
     ports: 
-      - "5000:5000"
+      - "7000:7000"
     volumes:
-      - ./:/usr/files
+      - ./:/app/files
     networks:
       - containernetwork
-    restart: always
 networks:
-  mynetwork:
-    name: containernetwork
+  containernetwork:
     driver: bridge
