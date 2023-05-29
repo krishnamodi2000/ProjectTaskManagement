@@ -1,18 +1,18 @@
 services:
-  c1:
-    image: coo1
-    container_name: container1 
+  container1:
+    image: container1
+    container_name: container1
     ports: 
       - "6000:6000"
     volumes:
       - ./:/app/files
     networks:
       - containernetwork
-  c2:
-    image: coo2
+  container2:
+    image: container2
     container_name: container2
     ports: 
-      - "7000:7000"
+      - "8081:8081"
     volumes:
       - ./:/app/files
     networks:

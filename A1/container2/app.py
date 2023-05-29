@@ -4,7 +4,7 @@ import os
 
 app = Flask(__name__)
 
-@app.route("/sum",methods=['POST'])
+@app.route("/sum", methods=['POST'])
 def sum():
     data=request.get_json()
     file=data["file"]
