@@ -1,6 +1,6 @@
 services:
   container1:
-    image: container1
+    image: krishnamodi2000/assignment-container1:final1
     container_name: container1
     ports: 
       - "6000:6000"
@@ -9,7 +9,7 @@ services:
     networks:
       - containernetwork
   container2:
-    image: container2
+    image: krishnamodi2000/assignment-container2:final2
     container_name: container2
     ports: 
       - "8081:8081"
