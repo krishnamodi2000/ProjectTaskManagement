@@ -15,7 +15,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the application code to the working directory
 COPY app.py .
 
+EXPOSE 5000
+
 # Set the entrypoint command to run the Python application
-CMD ["python", "app.py"]
+CMD ["python3", "-m" , "flask", "run", "--host=0.0.0.0", "-p","5000"]
 
 

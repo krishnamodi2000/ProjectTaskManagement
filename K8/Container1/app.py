@@ -17,9 +17,8 @@ def store_file():
         })
 
     file = data["file"]
-    current_dir = os.getcwd()
 
-    file_path = current_dir + '/files/' + file
+    file_path = '/Krishna_PV_dir/' + file
     try:
 
         file_data = data["data"]
@@ -33,6 +32,7 @@ def store_file():
             "message": "Success."
         })
 
+    #if there is an error in storing the file
     except Exception as e:
         print("returning from C1")
         return jsonify({
@@ -53,50 +53,48 @@ def calculate():
         })
 
     file = data["file"]
-    current_dir = os.getcwd()
 
-    file_path = current_dir + '/files/' + file
+    file_path = '/Krishna_PV_dir/' + file
     try:
+        #if the file does not exists in the /Krishna_PV_dir/
         if not os.path.exists(file_path):
             raise FileNotFoundError
         
         with open(file_path,'r') as f:
             dialect = csv.Sniffer().sniff(f.read(1024))
             f.seek(0)
-            if dialect.delimiter!=',':
-                raise csv.Error
+            if dialect.delimiter != ',':
+                return jsonify({
+                    "file": file,
+                    "error": "Input file not in CSV format."
+                })  #if the file does not have the delimeter as ,/
 
-            filereader = csv.reader(f,dialect)
+            filereader = csv.reader(f, dialect)
             header = next(filereader)
-            if header == ['product', 'amount ']: #changed a condn here to make sure the code is running right. Confirm with others if it has to be done
-                for row in filereader:
-                    if len(row) == 2:
-                        continue
-                    else:
-                        raise csv.Error
-            else:
-                raise csv.Error
-            
-        container2 = "http://localhost:5001/sum"
-        print("reached line 82", flush=True)
-        response = requests.post(container2, json=data)
-        print("reached line 84", flush=True)
-        return jsonify(response.json())
-        
+            if header != ['product', 'amount ']:
+                return jsonify({
+                    "file": file,
+                    "error": "Input file not in CSV format."
+                })  #if the file does not have product and amount as their heading
 
+            for row in filereader:
+                if len(row) != 2:
+                    return jsonify({
+                        "file": file,
+                        "error": "Input file not in CSV format." 
+                    }) #if the file does not have exactly two values
+            
     except FileNotFoundError:
         return jsonify({
             "file": file,
             "error": "File not found."
         })
     
-    except csv.Error:
-        return jsonify(
-            {
-                "file": file,
-                "error": "Input file not in CSV format."
-            }
-        )
-
+   
+            
+    container2 = "http://container2-service:5001/sum"
+    response = requests.post(container2, json=data)
+    return jsonify(response.json())
+        
 if __name__ == "__main__":
-    app.run(host="localhost", port=5000)
+    app.run(host="0.0.0.0", port=5000)

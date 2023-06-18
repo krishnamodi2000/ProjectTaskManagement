@@ -18,4 +18,4 @@ COPY app.py .
 EXPOSE 5001
 
 # Set the entrypoint command to run the Python application
-CMD ["python", "app.py"]
+CMD ["python3", "-m" , "flask", "run", "--host=0.0.0.0", "-p","5001"]
