@@ -1,0 +1,1029 @@
+# DynamoDB YAML : https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-dynamodb-table.html 
+# SQS YAML: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-sqs-queue.html#cfn-sqs-queue-kmsdatakeyreuseperiodseconds 
+#SNS YAML: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-sns-topic.html 
+#Lambda YAML: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-lambda-function.html
+#Lambda invoke permission YAML: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-lambda-permission.html 
+#Rest API YAML: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-apigateway-restapi.html 
+#API Gateway Resource YAML: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-apigateway-resource.html 
+# API Gateway Method YAML: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-apigateway-method.html 
+# API Gateway Integration Integration Response : https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-apitgateway-method-integration-integrationresponse.html
+#API Gateway Method Response: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-apitgateway-method-methodresponse.html 
+# Elastic Beanstalk Environment YAML: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/quickref-elasticbeanstalk.html 
+AWSTemplateFormatVersion: '2010-09-09'
+Description: ProjectTaskManagement Website for Cloud Term Assignment Summer 2023
+
+Resources:
+# Projects Table contains the projects that the admin will populate (Assume you are the admin here)
+  ProjectsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: project_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: project_id
+          KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+      TableName: Projects
+
+# User Table contains the user information that will populated during Sign Up and Project Management
+  UserTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: UserId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: UserId
+          KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+      TableName: Usersdb
+
+# Requests Table contains the access request information of a user for a project
+  RequestsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: request_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: request_id
+          KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+      TableName: Requests
+
+# Tasks Table contains the tasks in all the projects
+  TasksTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: TaskId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: TaskId
+          KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+      TableName: Tasks
+
+# SQS to process the access requests to the projects
+  AdminRequestsSQS:
+    Type: AWS::SQS::Queue
+    Properties:
+      DelaySeconds: 0
+      MaximumMessageSize: 262144
+      MessageRetentionPeriod: 345600
+      QueueName: AdminRequestsQueue
+      ReceiveMessageWaitTimeSeconds: 0
+      VisibilityTimeout: 30
+
+# SNS for the ProjectA 
+  ProjectASNSTopic:
+    Type: AWS::SNS::Topic
+    Properties: 
+      TopicName: ProjectA
+
+# SNS for the Projectb 
+  ProjectBSNSTopic:
+    Type: AWS::SNS::Topic
+    Properties: 
+      TopicName: ProjectB
+
+# SNS for the ProjectC 
+  ProjectCSNSTopic:
+    Type: AWS::SNS::Topic
+    Properties: 
+      TopicName: ProjectC
+
+#Sign Up Lambda - Saves user information during sign up in to the DynamoDB Table : Usersdb
+  SignUp:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code: 
+        S3Bucket: cloudtermassignmentlambdas
+        S3Key: SignUp.zip
+      Description: 'This Lambda contains a method for user SignUp'
+      FunctionName: SignUp
+      Handler: lambda_function.lambda_handler
+      Runtime: python3.9
+      Role: 'arn:aws:iam::704579266563:role/LabRole'
+      Timeout: 5
+
+#Log In Lambda - Logs in a user by cross checking user information from saved data in Usersdb
+  Login:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code: 
+        S3Bucket: cloudtermassignmentlambdas
+        S3Key: LogIn.zip
+      Description: 'This Lambda contains a method for user Login'
+      FunctionName: LogIn
+      Handler: lambda_function.lambda_handler
+      Runtime: python3.9
+      Role: 'arn:aws:iam::704579266563:role/LabRole'
+      Timeout: 5
+
+
+#Get User Lambda - Fecthes details of  a particular user from the Usersdb to be displayed on the user dashboard
+  GetUser:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code: 
+        S3Bucket: cloudtermassignmentlambdas
+        S3Key: GetUser.zip
+      Description: 'This Lambda contains a method for fetching user details from user employee id or email'
+      FunctionName: GetUser
+      Handler: lambda_function.lambda_handler
+      Runtime: python3.9
+      Role: 'arn:aws:iam::704579266563:role/LabRole'
+      Timeout: 3
+
+
+#Get All Projects Lambda - Fecthes details of  a all projects from the Projects Table to be displayed on the  project dashboard
+  GetAllProjects:
+    Type: 'AWS::Lambda::Function'
+    Properties:      
+      Code: 
+        S3Bucket: cloudtermassignmentlambdas
+        S3Key: GetAllProjects.zip
+      Description: 'This Lambda contains a method for fetching all projects'
+      FunctionName: GetAllProjects
+      Handler: lambda_function.lambda_handler
+      Runtime: python3.9
+      Role: 'arn:aws:iam::704579266563:role/LabRole'
+      Timeout: 3
+
+
+
+#Project Access Publisher Lambda - creates the requests for project access in the Requests Table and sends the message in the AdminRequestsQueue
+  ProjectAccessPublisher:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code: 
+        S3Bucket: cloudtermassignmentlambdas
+        S3Key: ProjectAccessPublisher.zip
+      Description: 'This Lambda contains a method for making access requests for project'
+      FunctionName: ProjectAccessPublisher
+      Handler: lambda_function.lambda_handler
+      Runtime: python3.9
+      Role: 'arn:aws:iam::704579266563:role/LabRole'
+      Timeout: 3
+
+#Process Project Access Requests Lambda - approves the requests for project access in the Requests Table and adds them to the User DB by  processing the message in the AdminRequestsQueue. 
+#Further it also subscribes the user to the SNS related to the project_id
+  ProcessProjectAccessRequests:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code: 
+        S3Bucket: cloudtermassignmentlambdas
+        S3Key: ProcessProjectAccessRequests.zip
+      Description: 'This Lambda contains a method for processing the access request and subscribing to Project Topic'
+      FunctionName: ProcessProjectAccessRequests
+      Handler: lambda_function.lambda_handler
+      Runtime: python3.9
+      Role: 'arn:aws:iam::704579266563:role/LabRole'
+      Timeout: 3
+
+
+#Get All Tasks of Project Lambda - Gets all the tasks under a particular project Id from Tasks Table
+  GetAllTasksofProject:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code: 
+        S3Bucket: cloudtermassignmentlambdas
+        S3Key: GetAllTasksofProject.zip
+      Description: 'This Lambda contains a method to get all tasks of a particular project'
+      FunctionName: GetAllTasksofProject
+      Handler: lambda_function.lambda_handler
+      Runtime: python3.9
+      Role: 'arn:aws:iam::704579266563:role/LabRole'
+      Timeout: 3
+
+
+#Create Task Lambda - Creates a task under a particular project Id and adds it to the Tasks Table
+  CreateTask:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code: 
+        S3Bucket: cloudtermassignmentlambdas
+        S3Key: CreateTask.zip
+      Description: 'This Lambda contains a method to create a Task for a project'
+      FunctionName: CreateTask
+      Handler: lambda_function.lambda_handler
+      Runtime: python3.9
+      Role: 'arn:aws:iam::704579266563:role/LabRole'
+      Timeout: 3
+
+
+#Update Task Lambda - Updates a task under a particular task Id and changes the status in the Tasks Table
+  UpdateTask:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code: 
+        S3Bucket: cloudtermassignmentlambdas
+        S3Key: UpdateTask.zip
+      Description: 'This Lambda contains a method to update a Task status for a project'
+      FunctionName: UpdateTask
+      Handler: lambda_function.lambda_handler
+      Runtime: python3.9
+      Role: 'arn:aws:iam::704579266563:role/LabRole'
+      Timeout: 3
+
+## API Gateways Using REST API for the Project Task Management Websote
+  ProjectTaskManagementApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: ProjectTaskManagement
+  # Add a permission to allow API Gateway to invoke the Sign Up Lambda function
+  ApiGatewaySignUpInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt SignUp.Arn
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ProjectTaskManagementApi}/*/*"
+
+  ApiGatewayLoginInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt Login.Arn
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ProjectTaskManagementApi}/*/*"
+
+  ApiGatewayGetUserInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt GetUser.Arn
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ProjectTaskManagementApi}/*/*"
+
+  ApiGatewayGetAllProjectsInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt GetAllProjects.Arn
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ProjectTaskManagementApi}/*/*"
+
+  ApiGatewayProjectAccessPublisherInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt ProjectAccessPublisher.Arn
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ProjectTaskManagementApi}/*/*"
+
+  ApiGatewayProcessProjectAccessRequestsInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt ProcessProjectAccessRequests.Arn
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ProjectTaskManagementApi}/*/*"
+
+  ApiGatewayGetAllTasksofProjectInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt GetAllTasksofProject.Arn
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ProjectTaskManagementApi}/*/*"
+
+  ApiGatewayCreateTaskInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt CreateTask.Arn
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ProjectTaskManagementApi}/*/*"
+
+  ApiGatewayUpdateTaskInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt UpdateTask.Arn
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ProjectTaskManagementApi}/*/*"
+
+# Resource for Sign Up Endpoint 
+  SignUpResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ProjectTaskManagementApi
+      PathPart: signup
+      ParentId: !GetAtt ProjectTaskManagementApi.RootResourceId
+
+
+# Option for  SignUp Resource
+  SignupOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        IntegrationResponses:
+          - ResponseParameters:
+              "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
+              "method.response.header.Access-Control-Allow-Methods": "'GET,POST'"
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            ResponseTemplates:
+              "application/json": ""
+            StatusCode: 200
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestTemplates:
+          "application/json": '{"statusCode": 200}'
+        Type: MOCK
+      MethodResponses:
+        - ResponseModels: 
+            "application/json": "Empty"
+          ResponseParameters:
+            "method.response.header.Access-Control-Allow-Headers": true
+            "method.response.header.Access-Control-Allow-Methods": true
+            "method.response.header.Access-Control-Allow-Origin": true
+          StatusCode: 200
+      RestApiId: !Ref ProjectTaskManagementApi
+      ResourceId: !Ref SignUpResource
+
+# POST METHOD FOR SignUp Resource
+  SignUpPOSTMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      HttpMethod: POST
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        IntegrationResponses:
+          - ResponseParameters:
+              "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              "method.response.header.Access-Control-Allow-Methods": "'GET,POST,OPTIONS'"
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            ResponseTemplates:
+              application/json: $input.json('$')
+            StatusCode: 200
+        Type: AWS_PROXY
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SignUp.Arn}/invocations"
+        RequestTemplates:
+          application/json: $input.json('$')
+      RequestParameters:
+        method.request.querystring.name: false
+      MethodResponses:
+        - ResponseParameters:
+            "method.response.header.Access-Control-Allow-Headers": true
+            "method.response.header.Access-Control-Allow-Methods": true
+            "method.response.header.Access-Control-Allow-Origin": true
+          StatusCode: 200
+      RestApiId: !Ref ProjectTaskManagementApi
+      ResourceId: !Ref SignUpResource
+# Resource for Login Up Endpoint 
+  LoginResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ProjectTaskManagementApi
+      PathPart: login
+      ParentId: !GetAtt ProjectTaskManagementApi.RootResourceId
+
+
+# Option for  Login Resource
+  LoginOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        IntegrationResponses:
+          - ResponseParameters:
+              "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
+              "method.response.header.Access-Control-Allow-Methods": "'GET,POST'"
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            ResponseTemplates:
+              "application/json": ""
+            StatusCode: 200
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestTemplates:
+          "application/json": '{"statusCode": 200}'
+        Type: MOCK
+      MethodResponses:
+        - ResponseModels: 
+            "application/json": "Empty"
+          ResponseParameters:
+            "method.response.header.Access-Control-Allow-Headers": true
+            "method.response.header.Access-Control-Allow-Methods": true
+            "method.response.header.Access-Control-Allow-Origin": true
+          StatusCode: 200
+      RestApiId: !Ref ProjectTaskManagementApi
+      ResourceId: !Ref LoginResource
+
+# POST METHOD FOR Login Resource
+  LoginPOSTMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      HttpMethod: POST
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        IntegrationResponses:
+          - ResponseParameters:
+              "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              "method.response.header.Access-Control-Allow-Methods": "'GET,POST,OPTIONS'"
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            ResponseTemplates:
+              application/json: $input.json('$')
+            StatusCode: 200
+        Type: AWS_PROXY
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${Login.Arn}/invocations"
+        RequestTemplates:
+          application/json: $input.json('$')
+      RequestParameters:
+        method.request.querystring.name: false
+      MethodResponses:
+        - ResponseParameters:
+            "method.response.header.Access-Control-Allow-Headers": true
+            "method.response.header.Access-Control-Allow-Methods": true
+            "method.response.header.Access-Control-Allow-Origin": true
+          StatusCode: 200
+      RestApiId: !Ref ProjectTaskManagementApi
+      ResourceId: !Ref LoginResource
+# Resource for Get User Endpoint 
+  GetUserResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ProjectTaskManagementApi
+      PathPart: dashboard
+      ParentId: !GetAtt ProjectTaskManagementApi.RootResourceId
+
+
+# Option for  GetUser Resource
+  GetUserOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        IntegrationResponses:
+          - ResponseParameters:
+              "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
+              "method.response.header.Access-Control-Allow-Methods": "'GET,POST'"
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            ResponseTemplates:
+              "application/json": ""
+            StatusCode: 200
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestTemplates:
+          "application/json": '{"statusCode": 200}'
+        Type: MOCK
+      MethodResponses:
+        - ResponseModels: 
+            "application/json": "Empty"
+          ResponseParameters:
+            "method.response.header.Access-Control-Allow-Headers": true
+            "method.response.header.Access-Control-Allow-Methods": true
+            "method.response.header.Access-Control-Allow-Origin": true
+          StatusCode: 200
+      RestApiId: !Ref ProjectTaskManagementApi
+      ResourceId: !Ref GetUserResource
+
+# POST METHOD FOR GetUser Resource
+  GetUserPOSTMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      HttpMethod: POST
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        IntegrationResponses:
+          - ResponseParameters:
+              "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              "method.response.header.Access-Control-Allow-Methods": "'GET,POST,OPTIONS'"
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            ResponseTemplates:
+              application/json: $input.json('$')
+            StatusCode: 200
+        Type: AWS_PROXY
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetUser.Arn}/invocations"
+        RequestTemplates:
+          application/json: $input.json('$')
+      RequestParameters:
+        method.request.querystring.name: false
+      MethodResponses:
+        - ResponseParameters:
+            "method.response.header.Access-Control-Allow-Headers": true
+            "method.response.header.Access-Control-Allow-Methods": true
+            "method.response.header.Access-Control-Allow-Origin": true
+          StatusCode: 200
+      RestApiId: !Ref ProjectTaskManagementApi
+      ResourceId: !Ref GetUserResource
+
+# Resource for Get All Projects Endpoint 
+  GetAllProjectsResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ProjectTaskManagementApi
+      PathPart: projects
+      ParentId: !GetAtt ProjectTaskManagementApi.RootResourceId
+
+
+# Option for  GetAllProjects Resource
+  GetAllProjectsOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        IntegrationResponses:
+          - ResponseParameters:
+              "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
+              "method.response.header.Access-Control-Allow-Methods": "'GET,POST'"
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            ResponseTemplates:
+              "application/json": ""
+            StatusCode: 200
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestTemplates:
+          "application/json": '{"statusCode": 200}'
+        Type: MOCK
+      MethodResponses:
+        - ResponseModels: 
+            "application/json": "Empty"
+          ResponseParameters:
+            "method.response.header.Access-Control-Allow-Headers": true
+            "method.response.header.Access-Control-Allow-Methods": true
+            "method.response.header.Access-Control-Allow-Origin": true
+          StatusCode: 200
+      RestApiId: !Ref ProjectTaskManagementApi
+      ResourceId: !Ref GetAllProjectsResource
+
+# Get METHOD FOR GetAllProjects Resource
+  GetAllProjectsPOSTMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      HttpMethod: GET
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        IntegrationResponses:
+          - ResponseParameters:
+              "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              "method.response.header.Access-Control-Allow-Methods": "'GET,POST,OPTIONS'"
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            ResponseTemplates:
+              application/json: $input.json('$')
+            StatusCode: 200
+        Type: AWS_PROXY
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetAllProjects.Arn}/invocations"
+        RequestTemplates:
+          application/json: $input.json('$')
+      RequestParameters:
+        method.request.querystring.name: false
+      MethodResponses:
+        - ResponseParameters:
+            "method.response.header.Access-Control-Allow-Headers": true
+            "method.response.header.Access-Control-Allow-Methods": true
+            "method.response.header.Access-Control-Allow-Origin": true
+          StatusCode: 200
+      RestApiId: !Ref ProjectTaskManagementApi
+      ResourceId: !Ref GetAllProjectsResource
+
+# Resource for Project Access Request Endpoint 
+  ProjectAccessPublisherResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ProjectTaskManagementApi
+      PathPart: accessrequest
+      ParentId: !GetAtt ProjectTaskManagementApi.RootResourceId
+
+
+# Option for  ProjectAccessPublisher Resource
+  ProjectAccessPublisherOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        IntegrationResponses:
+          - ResponseParameters:
+              "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
+              "method.response.header.Access-Control-Allow-Methods": "'GET,POST'"
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            ResponseTemplates:
+              "application/json": ""
+            StatusCode: 200
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestTemplates:
+          "application/json": '{"statusCode": 200}'
+        Type: MOCK
+      MethodResponses:
+        - ResponseModels: 
+            "application/json": "Empty"
+          ResponseParameters:
+            "method.response.header.Access-Control-Allow-Headers": true
+            "method.response.header.Access-Control-Allow-Methods": true
+            "method.response.header.Access-Control-Allow-Origin": true
+          StatusCode: 200
+      RestApiId: !Ref ProjectTaskManagementApi
+      ResourceId: !Ref ProjectAccessPublisherResource
+
+# Get METHOD FOR ProjectAccessPublisher Resource
+  ProjectAccessPublisherPOSTMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      HttpMethod: POST
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        IntegrationResponses:
+          - ResponseParameters:
+              "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              "method.response.header.Access-Control-Allow-Methods": "'GET,POST,OPTIONS'"
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            ResponseTemplates:
+              application/json: $input.json('$')
+            StatusCode: 200
+        Type: AWS_PROXY
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ProjectAccessPublisher.Arn}/invocations"
+        RequestTemplates:
+          application/json: $input.json('$')
+      RequestParameters:
+        method.request.querystring.name: false
+      MethodResponses:
+        - ResponseParameters:
+            "method.response.header.Access-Control-Allow-Headers": true
+            "method.response.header.Access-Control-Allow-Methods": true
+            "method.response.header.Access-Control-Allow-Origin": true
+          StatusCode: 200
+      RestApiId: !Ref ProjectTaskManagementApi
+      ResourceId: !Ref ProjectAccessPublisherResource
+
+# Resource for Processing Project Access Request Endpoint 
+  ProcessProjectAccessRequestsResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ProjectTaskManagementApi
+      PathPart: proccessrequest
+      ParentId: !GetAtt ProjectTaskManagementApi.RootResourceId
+
+
+# Option for  ProcessProjectAccessRequests Resource
+  ProcessProjectAccessRequestsOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        IntegrationResponses:
+          - ResponseParameters:
+              "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
+              "method.response.header.Access-Control-Allow-Methods": "'GET,POST'"
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            ResponseTemplates:
+              "application/json": ""
+            StatusCode: 200
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestTemplates:
+          "application/json": '{"statusCode": 200}'
+        Type: MOCK
+      MethodResponses:
+        - ResponseModels: 
+            "application/json": "Empty"
+          ResponseParameters:
+            "method.response.header.Access-Control-Allow-Headers": true
+            "method.response.header.Access-Control-Allow-Methods": true
+            "method.response.header.Access-Control-Allow-Origin": true
+          StatusCode: 200
+      RestApiId: !Ref ProjectTaskManagementApi
+      ResourceId: !Ref ProcessProjectAccessRequestsResource
+
+# Get METHOD FOR ProcessProjectAccessRequests Resource
+  ProcessProjectAccessRequestsPOSTMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      HttpMethod: GET
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        IntegrationResponses:
+          - ResponseParameters:
+              "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              "method.response.header.Access-Control-Allow-Methods": "'GET,POST,OPTIONS'"
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            ResponseTemplates:
+              application/json: $input.json('$')
+            StatusCode: 200
+        Type: AWS_PROXY
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ProcessProjectAccessRequests.Arn}/invocations"
+        RequestTemplates:
+          application/json: $input.json('$')
+      RequestParameters:
+        method.request.querystring.name: false
+      MethodResponses:
+        - ResponseParameters:
+            "method.response.header.Access-Control-Allow-Headers": true
+            "method.response.header.Access-Control-Allow-Methods": true
+            "method.response.header.Access-Control-Allow-Origin": true
+          StatusCode: 200
+      RestApiId: !Ref ProjectTaskManagementApi
+      ResourceId: !Ref ProcessProjectAccessRequestsResource   
+
+# Resource for Get All Tasks of Project Endpoint 
+  GetAllTasksofProjectResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ProjectTaskManagementApi
+      PathPart: tasks
+      ParentId: !GetAtt ProjectTaskManagementApi.RootResourceId
+
+# Option for  GetAllTasksofProject Resource
+  GetAllTasksofProjectOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        IntegrationResponses:
+          - ResponseParameters:
+              "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
+              "method.response.header.Access-Control-Allow-Methods": "'GET,POST'"
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            ResponseTemplates:
+              "application/json": ""
+            StatusCode: 200
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestTemplates:
+          "application/json": '{"statusCode": 200}'
+        Type: MOCK
+      MethodResponses:
+        - ResponseModels: 
+            "application/json": "Empty"
+          ResponseParameters:
+            "method.response.header.Access-Control-Allow-Headers": true
+            "method.response.header.Access-Control-Allow-Methods": true
+            "method.response.header.Access-Control-Allow-Origin": true
+          StatusCode: 200
+      RestApiId: !Ref ProjectTaskManagementApi
+      ResourceId: !Ref GetAllTasksofProjectResource
+
+# POST METHOD FOR GetAllTasksofProject Resource
+  GetAllTasksofProjectPOSTMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      HttpMethod: POST
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        IntegrationResponses:
+          - ResponseParameters:
+              "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              "method.response.header.Access-Control-Allow-Methods": "'GET,POST,OPTIONS'"
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            ResponseTemplates:
+              application/json: $input.json('$')
+            StatusCode: 200
+        Type: AWS_PROXY
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetAllTasksofProject.Arn}/invocations"
+        RequestTemplates:
+          application/json: $input.json('$')
+      RequestParameters:
+        method.request.querystring.name: false
+      MethodResponses:
+        - ResponseParameters:
+            "method.response.header.Access-Control-Allow-Headers": true
+            "method.response.header.Access-Control-Allow-Methods": true
+            "method.response.header.Access-Control-Allow-Origin": true
+          StatusCode: 200
+      RestApiId: !Ref ProjectTaskManagementApi
+      ResourceId: !Ref GetAllTasksofProjectResource
+
+  # Resource for Create Task Endpoint 
+  CreateTaskResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ProjectTaskManagementApi
+      PathPart: createtask
+      ParentId: !GetAtt ProjectTaskManagementApi.RootResourceId
+
+# Option for  CreateTask Resource
+  CreateTaskOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        IntegrationResponses:
+          - ResponseParameters:
+              "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
+              "method.response.header.Access-Control-Allow-Methods": "'GET,POST'"
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            ResponseTemplates:
+              "application/json": ""
+            StatusCode: 200
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestTemplates:
+          "application/json": '{"statusCode": 200}'
+        Type: MOCK
+      MethodResponses:
+        - ResponseModels: 
+            "application/json": "Empty"
+          ResponseParameters:
+            "method.response.header.Access-Control-Allow-Headers": true
+            "method.response.header.Access-Control-Allow-Methods": true
+            "method.response.header.Access-Control-Allow-Origin": true
+          StatusCode: 200
+      RestApiId: !Ref ProjectTaskManagementApi
+      ResourceId: !Ref CreateTaskResource
+
+# POST METHOD FOR CreateTask Resource
+  CreateTaskPOSTMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      HttpMethod: POST
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        IntegrationResponses:
+          - ResponseParameters:
+              "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              "method.response.header.Access-Control-Allow-Methods": "'GET,POST,OPTIONS'"
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            ResponseTemplates:
+              application/json: $input.json('$')
+            StatusCode: 200
+        Type: AWS_PROXY
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CreateTask.Arn}/invocations"
+        RequestTemplates:
+          application/json: $input.json('$')
+      RequestParameters:
+        method.request.querystring.name: false
+      MethodResponses:
+        - ResponseParameters:
+            "method.response.header.Access-Control-Allow-Headers": true
+            "method.response.header.Access-Control-Allow-Methods": true
+            "method.response.header.Access-Control-Allow-Origin": true
+          StatusCode: 200
+      RestApiId: !Ref ProjectTaskManagementApi
+      ResourceId: !Ref CreateTaskResource
+#New
+
+# Resource for Update Task Endpoint 
+  UpdateTaskResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ProjectTaskManagementApi
+      PathPart: updatetask
+      ParentId: !GetAtt ProjectTaskManagementApi.RootResourceId
+
+
+# Option for  UpdateTask Resource
+  UpdateTaskOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        IntegrationResponses:
+          - ResponseParameters:
+              "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
+              "method.response.header.Access-Control-Allow-Methods": "'GET,POST'"
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            ResponseTemplates:
+              "application/json": ""
+            StatusCode: 200
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestTemplates:
+          "application/json": '{"statusCode": 200}'
+        Type: MOCK
+      MethodResponses:
+        - ResponseModels: 
+            "application/json": "Empty"
+          ResponseParameters:
+            "method.response.header.Access-Control-Allow-Headers": true
+            "method.response.header.Access-Control-Allow-Methods": true
+            "method.response.header.Access-Control-Allow-Origin": true
+          StatusCode: 200
+      RestApiId: !Ref ProjectTaskManagementApi
+      ResourceId: !Ref UpdateTaskResource
+
+# Get METHOD FOR ProjectAccessPublisher Resource
+  UpdateTaskPOSTMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      HttpMethod: POST
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        IntegrationResponses:
+          - ResponseParameters:
+              "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              "method.response.header.Access-Control-Allow-Methods": "'GET,POST,OPTIONS'"
+              "method.response.header.Access-Control-Allow-Origin": "'*'"
+            ResponseTemplates:
+              application/json: $input.json('$')
+            StatusCode: 200
+        Type: AWS_PROXY
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${UpdateTask.Arn}/invocations"
+        RequestTemplates:
+          application/json: $input.json('$')
+      RequestParameters:
+        method.request.querystring.name: false
+      MethodResponses:
+        - ResponseParameters:
+            "method.response.header.Access-Control-Allow-Headers": true
+            "method.response.header.Access-Control-Allow-Methods": true
+            "method.response.header.Access-Control-Allow-Origin": true
+          StatusCode: 200
+      RestApiId: !Ref ProjectTaskManagementApi
+      ResourceId: !Ref UpdateTaskResource
+
+#Creating Deployment API
+  PTMDeployAPI:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - SignUpResource
+      - LoginResource
+      - GetUserResource
+      - GetAllProjectsResource
+      - ProjectAccessPublisherResource
+      - ProcessProjectAccessRequestsResource
+      - GetAllTasksofProjectResource
+      - CreateTaskResource
+      - UpdateTaskResource
+      - UpdateTaskPOSTMethod
+      - SignUpPOSTMethod
+      - LoginPOSTMethod
+      - GetUserPOSTMethod
+      - GetAllProjectsPOSTMethod
+      - ProjectAccessPublisherPOSTMethod
+      - ProcessProjectAccessRequestsPOSTMethod
+      - GetAllTasksofProjectPOSTMethod
+      - CreateTaskPOSTMethod
+    Properties:
+      RestApiId: !Ref ProjectTaskManagementApi
+#Prod Stage
+  ProdStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      DeploymentId: !Ref PTMDeployAPI
+      RestApiId: !Ref ProjectTaskManagementApi
+      StageName: production     
+# Project Task Management Front end react application
+  ProjectTaskManagementFrontend:
+    Type: "AWS::ElasticBeanstalk::Application"
+    Properties:
+      Description: "Frontend react app of Project Task Management"
+      ApplicationName: "ProjectTaskManagement"
+  # Version
+  ProjectTaskManegementVersion:
+    Type: "AWS::ElasticBeanstalk::ApplicationVersion"
+    DependsOn:
+      - ProjectTaskManagementFrontend
+    Properties:
+      ApplicationName: !Ref ProjectTaskManagementFrontend
+      Description: "Application Version of the Frontend App"
+      SourceBundle:
+        S3Bucket: "cloudtermassignmentlambdas"
+        S3Key: "ptmfrontend.zip"
+  ProjectTaskManagementFrontendConfig:
+    Type: "AWS::ElasticBeanstalk::ConfigurationTemplate"
+    Properties:
+     ApplicationName: !Ref ProjectTaskManagementFrontend
+     Description: "Configuration Template for the React Frontend of Project Management "
+     SolutionStackName: "64bit Amazon Linux 2 v5.8.4 running Node.js 18"
+     OptionSettings:
+      - Namespace: "aws:autoscaling:launchconfiguration"
+        OptionName: "InstanceType"
+        Value: "t3.large"
+      - Namespace: "aws:autoscaling:launchconfiguration"
+        OptionName: "EC2KeyName"
+        Value: "vockey"
+      - Namespace: "aws:autoscaling:launchconfiguration"
+        OptionName: "IamInstanceProfile"
+        Value: "LabInstanceProfile"
+      - Namespace: "aws:elasticbeanstalk:environment"
+        OptionName: "ServiceRole"
+        Value: "arn:aws:iam::704579266563:role/LabRole"
+      - Namespace: "aws:elasticbeanstalk:environment"
+        OptionName: "EnvironmentType"
+        Value: "SingleInstance"
+      - Namespace: "aws:elasticbeanstalk:application:environment"
+        OptionName: "REACT_APP_API_ENDPOINT"
+        Value: !Sub "https://${ProjectTaskManagementApi}.execute-api.${AWS::Region}.amazonaws.com/production"
+  #Creating environment in the React Front end
+  ProjectTaskManagementFrontendEnviornmnet:
+    Type: "AWS::ElasticBeanstalk::Environment"
+    Properties:
+      ApplicationName: !Ref ProjectTaskManagementFrontend
+      EnvironmentName: "ProjectTaskManagementFrontendEnviornmnet"
+      Description: "Elastic Beanstalk Environment for the Frontend of Project Task Manegement"
+      VersionLabel: !Ref ProjectTaskManegementVersion
+      TemplateName: !Ref ProjectTaskManagementFrontendConfig
+      OptionSettings:
+        - Namespace: "aws:elasticbeanstalk:environment"
+          OptionName: "EnvironmentType"
+          Value: "SingleInstance"
